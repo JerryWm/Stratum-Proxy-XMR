@@ -1,0 +1,23 @@
+{
+
+//	pool address
+	pool_address: "stratum+tcp://my-host:port",
+
+//	pool password
+	pool_password: "x",
+	
+//	user wallet address
+	wallet_address: "my-wallet-addres",
+
+//	bind server address
+	server_address: "0.0.0.0:2222",
+	
+//	[true/false] if you use pool nicehash, set to false
+	emu_nicehash: false,
+	
+//	http server address
+//	Example server on		=>	 http_address: "0.0.0.0:8000",
+//	Example server off		=>	 http_address: null,
+	http_address: "0.0.0.0:8000",
+
+}
