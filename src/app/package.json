@@ -1,0 +1,17 @@
+{
+  "main": "./main.js",
+  
+  "dependencies": {
+    "socket.io": ""
+  },
+  "description": "Stratum proxy, cryptonight",
+  "keywords": [
+    "realtime",
+    "stratum",
+    "proxy",  
+	"cryptonight"
+  ],
+  "name": "stratum proxy cryptonight",
+  "version": "2.0.0"
+  
+}
