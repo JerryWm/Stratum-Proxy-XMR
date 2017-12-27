@@ -1,2 +1,5 @@
 # Stratum-Proxy-XMR
-Stratum proxy for xmr
+
+* Accumulates the miners.
+* Supports auto complexity for miners.
+* Configuring the pools in the Web panel.
