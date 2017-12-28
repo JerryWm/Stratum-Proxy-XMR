@@ -1,10 +1,14 @@
 {
 
   "main": "./main.js",
+
+  "author": "Jerry",
   
   "dependencies": {
     "socketio": "latest"
   },
+  
+  "name": "stratum-proxy-cryptonight",
   
   "description": "Stratum proxy, cryptonight",
   
@@ -12,11 +16,12 @@
     "realtime",
     "stratum",
     "proxy",  
-	"cryptonight"
+	"cryptonight",
+    "xmr",
+    "cryptonote",
+	"monero"
   ],
-  
-  "name": "stratum proxy cryptonight",
-  
+
   "version": "1.2.0"
   
 }
