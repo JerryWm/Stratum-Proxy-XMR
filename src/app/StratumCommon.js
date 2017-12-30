@@ -16,7 +16,7 @@ class Recv {
 				return "";
 			});
 		} catch(e) {
-			console.log("..recv: " + 0, e);
+			//console.log("..recv: " + 0, e);
 			this.incoming_buf = "";
 			return false;
 		}

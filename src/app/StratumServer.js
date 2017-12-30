@@ -1,11 +1,13 @@
 
 const EventEmitter = require("events").EventEmitter;
 
+const fs = require('fs');
 const Logger = require("./Logger");
 const Common = require("./Common");
 const StratumConfig = require("./StratumConfig");
 const StratumCommon = require("./StratumCommon");
 const HashRate = require("./HashRate");
+const Paths = require("./Paths");
 
 /**
 	bind_address,
@@ -50,6 +52,13 @@ class TimeEvents {
 	}
 }
 
+const stratumServerOptionsFilter = {
+	start_difficulty: {def: 10000, min: 10, max: undefined},
+	
+	min_difficulty: {def: 10, min: 10, max: undefined},
+	
+	share_time: {def: 20, min: 1, max: undefined},
+};
 
 
 /**
@@ -75,30 +84,80 @@ class TimeEvents {
 class StratumServer {
 	constructor(options, events, logger) {
 		this.prefix = "stratum:server:";
-		this.options = options;
+
+		this.options = {
+			bind_address: options.bind_address,
+			
+			start_difficulty: Common.parseIntegerFilter(options.start_difficulty, stratumServerOptionsFilter.start_difficulty),
+			min_difficulty  : Common.parseIntegerFilter(options.min_difficulty  , stratumServerOptionsFilter.min_difficulty),
+			share_time      : Common.parseIntegerFilter(options.share_time      , stratumServerOptionsFilter.share_time),
+			ssl: !!options.ssl,
+			ssl_options: !options.ssl_options ? null : {
+				key : options.ssl_options.key,
+				cert: options.ssl_options.cert,
+			}
+		};
+		
 		this.events = events;
 		this.id = Common.getGlobalUniqueId();
+		
+		this.job = null;
+		this.workers = [];
+		
 		this.logger = new Logger(logger, "STRATUM-SERVER #" + this.id);
 		
 		this.events.emit(this.prefix + "open", this);
-
+		
 		let tmphp = Common.addressEx(this.options.bind_address);
 		if ( !tmphp ) {
-			this.logger.error("Invalid pool address \"" + this.options.bind_address + "\"");
+			this.logger.error(`Invalid pool address "${this.options.bind_address}"`);
 			this.events.emit(this.prefix + "close", this);
 			return;
 		}
 		[this.host, this.port] = tmphp;
-		
-		this.options.start_difficulty = this.options.start_difficulty || 100000;
-		this.options.share_time  = this.options.share_time  || 20;
 
-		this.socket = require('net').createServer(this.onClient.bind(this));
-		
-		this.job = null;
-		this.workers = [];
 
+		this.create();
+		
 		this.setEvents();
+	}
+	
+	create() {
+		if ( this.options.ssl ) {
+			let ssl_options = {
+				requestCert: false,
+				key: fs.readFileSync(Paths.APP_RESOURCES_DIR + '/default-server-cert/key.pem'),
+				cert: fs.readFileSync(Paths.APP_RESOURCES_DIR + '/default-server-cert/cert.pem'),
+			};
+
+			if ( this.options.ssl_options && 
+					this.options.ssl_options.key && 
+						this.options.ssl_options.cert ) {
+				do {
+					if ( !fs.existsSync(this.options.ssl_options.key) ) {
+						this.logger.error(`File "${this.options.ssl_options.key}" for ssl stratum server(${this.options.bind_address}) not found`);
+						break;
+					}
+					
+					if ( !fs.existsSync(this.options.ssl_options.cert) )  {
+						this.logger.error(`File "${this.options.ssl_options.cert}" for ssl stratum server(${this.options.bind_address}) not found`);
+						break;
+					}
+					
+					ssl_options.key = fs.readFileSync(this.options.ssl_options.key);
+					ssl_options.cert = fs.readFileSync(this.options.ssl_options.cert);
+				} while(0);
+				
+			}
+			
+			this.socket = require('tls').createServer(ssl_options, this.onClient.bind(this));
+		} else {
+			this.socket = require('net').createServer(this.onClient.bind(this));
+		}
+	}
+	
+	logInfoServer(color, prevColor) {
+		return `[${color}SSL ${this.options.ssl?"ON":"OFF"}${prevColor}] "${color}${this.options.bind_address}${prevColor}"`;
 	}
 	
 	setEvents() {
@@ -108,12 +167,12 @@ class StratumServer {
 		});
 		
 		this.socket.on("listening", () => {
-			this.logger.success("Opened server on \""+this.host+':'+this.port+'"' );
+			this.logger.success(`Opened server on ${this.logInfoServer(Logger.LOG_COLOR_MAGENTA, Logger.LOG_COLOR_GREEN)}`);
 			this.events.emit(this.prefix + "listening", this);
 		});
 
 		try {
-			this.logger.notice("Attempting opened server on "+Logger.LOG_COLOR_MAGENTA_LIGHT+"\""+this.host+':'+this.port+'"');
+			this.logger.notice(`Attempting opened server on ${this.logInfoServer(Logger.LOG_COLOR_MAGENTA_LIGHT, Logger.LOG_COLOR_GRAY)}`);
 			this.socket.listen(this.port, this.host);
 		} catch(e) {
 			this.logger.error('An error has occurred ' + (e.message ? e.message : ""));
@@ -187,38 +246,36 @@ class StratumServerClient {
 		this.connectionTime = Common.currTimeSec();
 
 		this.events.emit(this.prefix + "connect", this);
-		
+	
 		this.setEvents();
 	}
 	
 	setEvents() {
+         this.socket.setKeepAlive(true);
+         this.socket.setEncoding('utf8');
 		
 		this.socket.on('data', (data) => { 
 			if ( !this.incoming.recv(data, this.recvFrameObject.bind(this)) ) {
 				this.sendError("Bad json");
-				this.logger.error("Worker send bad json");
-				this.close();
+				this.closeAndLogError("Worker send bad json");
 			}
 		});
 		
 		this.socket.on('end', () => {
-			this.logger.notice('Client disconnected'); 
-			this.close();
+			this.closeAndLogError('Client disconnected');
 		});
 		
 		this.socket.on('error', () => {
-			this.logger.error('Error socket');
-			this.close();
+			this.closeAndLogError('Error socket');
 		});
 		
 		this.socket.on('timeout', () => {
-			this.logger.error('Error socket timeout');
-			this.close();
+			this.closeAndLogError('Error socket timeout');
 		});
 		
 	}
 
-	close() {
+	close(msg) {
 		if ( this.disconnected ) {
 			return;
 		}
@@ -227,10 +284,14 @@ class StratumServerClient {
 		this.logger.notice("Disconnected...");
 		this.logger.close();
 		
-		this.events.emit(this.prefix + "disconnect", this);
-		this.events.emit(this.prefix + "close", this);
+		this.events.emit(this.prefix + "disconnect", this, msg);
+		this.events.emit(this.prefix + "close", this, msg);
 		
 		this.disconnected = true;
+	}
+	closeAndLogError(msg) {
+		this.logger.error(msg);
+		this.close(msg);
 	}
 	
 	recvFrameObject(obj) {
@@ -245,8 +306,7 @@ class StratumServerClient {
 			
 			if ( obj.method !== 'login' ) {
 				this.sendResult(resultId, null, "Expected client login method");
-				this.logger.error("Send error: Expected client login method");
-				this.close();
+				this.closeAndLogError("Send error: Expected client login method");
 				return;
 			}
 		
@@ -256,11 +316,12 @@ class StratumServerClient {
 				this.agent         = obj.params.agent;
 			}
 			
+			this.events.emit(this.prefix + "login", this);
+			
 			let job = this.getJob();
 			if ( !job ) {
 				this.sendResult(resultId, null, "Proxy server is not ready");
-				this.logger.error("Send error: Proxy server is not ready");
-				this.close();
+				this.closeAndLogError("Send error: Proxy server is not ready");
 				return;
 			}
 			
@@ -276,7 +337,6 @@ class StratumServerClient {
 			
 			this.logger.success(`${this.socket.remoteAddress}:${this.socket.remotePort} / ${agent}`);
 			
-			this.events.emit(this.prefix + "login", this);
 			
 			return;
 			
@@ -354,7 +414,7 @@ class StratumServerClient {
 		this.sendObj(obj);
 	}
 	sendError(errorText, errorCode) {
-		obj = {
+		let obj = {
 			error: this.makeErrorForSend(errorText, errorCode),
 		};
 		this.sendObj(obj);
@@ -447,6 +507,7 @@ class StratumServerClient {
 			diff *= this.options.share_time;
 		}
 		
+		diff = Math.max(diff, this.options.min_difficulty);
 		
 		let target = (0xFFFFFFFF / diff)|0;
 		target = Math.max(target, this.pool_target);

@@ -9,7 +9,6 @@ const StratumCommon = require("./StratumCommon");
 const StratumClient = require("./StratumClient");
 const StratumServer = require("./StratumServer");
 
-
 const STRATUM_PROXY_SERVER_RECONNECT_INTERVAL = 5e3;
 const STRATUM_PROXY_CLIENT_RECONNECT_INTERVAL = 5e3;
 const HTTP_SERVER_RECONNECT_INTERVAL = 5e3;
@@ -219,9 +218,6 @@ class StratumProxy {
 		
 		this.poolAddCount = 0;
 		
-		
-		this.serverFrame();
-		
 		this.events.on("stratum:server:worker:connect"       , this.workerConnect      .bind(this));
 		this.events.on("stratum:server:worker:disconnect"    , this.workerDisconnect   .bind(this));
 		this.events.on("stratum:server:worker:get_job"       , this.workerGetJob       .bind(this));
@@ -266,12 +262,24 @@ class StratumProxy {
 			}
 		}, 20e3);
 		
-		events.on("stratum:server:close", () => setTimeout(this.serverFrame.bind(this), STRATUM_PROXY_SERVER_RECONNECT_INTERVAL));
+		this.startStratumServers();
 	}
 
-	serverFrame() {
-		this.stratumServer = new StratumServer(this.options.server, this.events, this.logger);
+	startStratumServers() {
+		var list = {};
+		this.events.on("stratum:server:close", (server) => {
+			let svOptions = list[server.id];
+			if ( svOptions ) {
+				setTimeout(() => {list[ (new StratumServer(svOptions, this.events, this.logger)).id ] = svOptions;}, STRATUM_PROXY_SERVER_RECONNECT_INTERVAL);
+			}
+			delete list[server.id];
+		});
+		
+		for(let svOptions of this.options.stratum_servers) {
+			list[ (new StratumServer(svOptions, this.events, this.logger)).id ] = svOptions;
+		}
 	}
+	
 
 
 	

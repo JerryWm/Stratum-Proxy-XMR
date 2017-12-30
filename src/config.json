@@ -1,15 +1,32 @@
 {
 	
-	server: {
-		//	bind server address
-		bind_address: "0.0.0.0:8888",
+	stratum_servers: [
+	
+		{
+			bind_address: "0.0.0.0:8888",
+			share_time: 20,
+			start_difficulty: 10000,
+			min_difficulty: 10,
+			ssl: false,
+		},
 		
-		//	share time(sec)
-		share_time: 20,
+		{
+			bind_address: "0.0.0.0:1443",
+			share_time: 20,
+			start_difficulty: 10000,
+			min_difficulty: 10,
+			
+			ssl: true,
+
+			/**
+			ssl_options: {
+				key: "./path-to-key.pem",
+				cert: "./path-to-cert.pem",
+			}
+			*/
+		},
 		
-		//	start difficulty
-		start_difficulty: 10000,
-	},
+	],
 	
 	web_server: {
 		//	enable

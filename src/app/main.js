@@ -1,10 +1,7 @@
 const CFG_PATH = "config.json";
 const CFG_POOLS_PATH = "pools.json";
 
-const APP_DIR = __dirname + "/";
-const APP_WEB_DIR = APP_DIR + "/web/";
-const APP_WEB_PUBLIC_DIR = APP_WEB_DIR + "/public/";
-
+const Paths = require('./paths');
 
 const fs = require('fs');
 const EventEmitter = require('events').EventEmitter;
@@ -67,7 +64,7 @@ function main(logger) {
 			logger.success("Web server is powered on");
 
 			///	############## web server
-			let webServerCreate = () => new WebServer(cfg.web_server.bind_address, [APP_WEB_PUBLIC_DIR], events, logger);
+			let webServerCreate = () => new WebServer(cfg.web_server.bind_address, [Paths.APP_WEB_PUBLIC_DIR], events, logger);
 			events.on("web:server:close", ()=> setTimeout(webServerCreate, 5e3));
 			webServerCreate();
 

@@ -128,4 +128,33 @@ Common.extNonceJobBlob = (blob) => {
 	return blob.substr(39*2, 8);
 }
 
+Common.parseIntegerFilter = (n, options) => {
+	if ( n === null || n === undefined || isNaN(Number(n)) ) {
+		n = options.def;
+	} else {
+		n = parseInt( Math.round(n) );
+		
+		if ( String(n) !== String(n|0) ) {
+			n = options.def;
+		}
+	}
+
+	n |= 0;
+
+	if ( options.min === undefined ) { return n; }
+	n = Math.max(n, options.min);
+	
+	if ( options.max === undefined ) { return n; }
+	n = Math.min(n, options.max);
+	
+	return n;
+}
+Common.parseInteger = (n, def, min, max) => {
+	return Common.parseIntegerFilter(n, {
+		def: def,
+		min: min,
+		max: max,
+	});
+}
+
 module.exports = Common;
