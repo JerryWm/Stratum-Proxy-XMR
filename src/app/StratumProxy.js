@@ -59,8 +59,8 @@ class JobMng {
 		this.part2 = blob.substr(ofs);
 		
 		this.nonce3byte = Common.hexToUint32(this.nonce3byte + "00") | 0;
-		this.nonce1byte = parseInt(this.nonce1byte) | 0;
-		
+		this.nonce1byte = parseInt(this.nonce1byte, 16) | 0;
+		//console.log("this.nonce1byte: " + this.nonce1byte)
 		this.seq = 0;
 	}
 	
