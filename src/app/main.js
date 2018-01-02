@@ -1,7 +1,7 @@
 const CFG_PATH = "config.json";
 const CFG_POOLS_PATH = "pools.json";
 
-const Paths = require('./paths');
+const Paths = require('./Paths');
 
 const fs = require('fs');
 const EventEmitter = require('events').EventEmitter;
