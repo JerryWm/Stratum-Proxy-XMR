@@ -1,5 +1,14 @@
 {
+	/* 
+	Stratum ports which workers can connect to. Multiple can be setup for different ports, difficulty, or SSL/TLS
 	
+	Options:
+		bind_address - the interface IP (0.0.0.0 for all) and port for workers to connect to 
+		share_time - the average target time for worker finding a share proxy will try to maintain
+		start_difficulty - the default difficulty proxy start negotiation with worker at
+		min_difficulty - the lowest difficulty proxy will allow for worker. Set according to the slowest worker.
+		ssl - require SSL/TLS for workers on given port
+	*/
 	stratum_servers: [
 	
 		{
@@ -28,17 +37,19 @@
 		
 	],
 	
+	/*
+	Web server for managing proxy 
+	
+	Options:
+		enable - whether or not to enable web portal
+		bind_address - the interface IP (0.0.0.0 for all) and port to server web page
+		auth_key - login key used for access to web page
+		open_browser - launch browser window to web page when proxy program is started
+	*/ 
 	web_server: {
-		//	enable
 		enable: true,
-		
-		//	bind web server address
 		bind_address: "0.0.0.0:8000",
-		
-		//	secret key
 		auth_key: "admin",
-		
-		// open browser
 		open_browser: false,
 	},
 
