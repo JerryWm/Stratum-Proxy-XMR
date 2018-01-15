@@ -253,6 +253,11 @@ class StratumProxy {
 			for(let i in this.pools) {
 				this.pools[i].pool.disconnect("Switch pool");
 			}	
+			
+			for(let i in this.openNoConnectPools) {
+				this.openNoConnectPools[i].disconnect("Switch pool");
+			}	
+			
 			this.pool_connect_info = null;
 		});
 	
