@@ -26,7 +26,7 @@ class WebControl extends WebStatBase {
 		});
 		
 		this.disconnect_count = 0;
-		events.on("stratum:client:disconnect", () => {
+		events.on("stratum:client:close", () => {
 			if ( this.disconnect_count-- <= 0 ) {
 				setTimeout(() => {
 					for(let i in this.pools) {
