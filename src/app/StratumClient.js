@@ -149,19 +149,24 @@ class StratumClient {
 	}
 	
 	disconnect(msg) {
-		if ( this.socket ) {
-			this.socket.end();
-			this.socket = null;
-		}
-		
 		this.keepaliveSIM.close();
 		this.expectedResultSIM.close();
 		
-		this.events.emit(this.prefix + "disconnect", this, msg || "");
-		this.events.emit(this.prefix + "close", this, msg || "");
+		if ( !this.disconnected ) {
+			this.events.emit(this.prefix + "disconnect", this, msg || "");
+		}
+		if ( !this.closed ) {
+			this.events.emit(this.prefix + "close", this, msg || "");
+		}
 		
 		this.disconnected = true;
 		this.closed = true;
+		
+		if ( this.socket ) {
+			this.socket.destroy();
+			this.socket = null;
+			return;
+		}		
 	}
 	
 	setEvents() {
@@ -213,7 +218,7 @@ class StratumClient {
 			}
 		});
 		
-		this.socket.on('end', () => {
+		this.socket.on('close', () => {
 			this.logger.error('The server disconnected the connection');
 			this.disconnect('The server disconnected the connection');
 		});
