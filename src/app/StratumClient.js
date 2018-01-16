@@ -112,8 +112,8 @@ class StratumClient {
 				let obj = this.expectedResult[i];
 				
 				if ( obj.startTime + obj.timeoutMiliSec < ctms ) {
-					this.logger.error("Poole did not send the result. Timeout error");
-					this.disconnect("Poole did not send the result. Timeout error");
+					this.logger.error("Pool did not send the result. Timeout error");
+					this.disconnect("Pool did not send the result. Timeout error");
 					return;
 				}
 			}
@@ -183,8 +183,8 @@ class StratumClient {
 				pass : this.pool.pool_password,
 			}, (obj) => {
 				if ( obj.error ) {
-					this.logger.error('Poole sent a bug "'+(obj.error.message?obj.error.message:'')+'"');
-					this.disconnect('Poole sent a bug "'+(obj.error.message?obj.error.message:'')+'"');
+					this.logger.error('Pool sent a bug "'+(obj.error.message?obj.error.message:'')+'"');
+					this.disconnect('Pool sent a bug "'+(obj.error.message?obj.error.message:'')+'"');
 					return;
 				}
 				
@@ -200,8 +200,8 @@ class StratumClient {
 					
 					this.keepaliveSIM.on(this.doPing.bind(this));
 				} else {
-					this.logger.error('Poole sent a invalid message');
-					this.disconnect('Poole sent a invalid message');
+					this.logger.error('Pool sent a invalid message');
+					this.disconnect('Pool sent a invalid message');
 					return;
 				}
 
@@ -289,8 +289,8 @@ class StratumClient {
 	recvFrameObject(obj) {
 		//this.logger.notice("recv...: " + JSON.stringify(obj))
 		if ( typeof obj !== 'object' ) {
-			this.logger.error('Poole sent invalid raw json');
-			this.disconnect('Poole sent invalid raw json');
+			this.logger.error('Pool sent invalid raw json');
+			this.disconnect('Pool sent invalid raw json');
 			return;
 		}
 		
@@ -312,7 +312,7 @@ class StratumClient {
 		}
 	
 		if ( obj.error ) {
-			this.logger.warning('Poole sent a bug "'+(obj.error.message?obj.error.message:'')+'"');
+			this.logger.warning('Pool sent a bug "'+(obj.error.message?obj.error.message:'')+'"');
 			return;
 		}
 		
@@ -407,7 +407,7 @@ class StratumClient {
 				if ( obj.error ) {
 					this.rejected_share_count++;
 					
-					this.logger.warning('Poole sent a bug "'+(obj.error.message?obj.error.message:'')+'"');
+					this.logger.warning('Pool sent a bug "'+(obj.error.message?obj.error.message:'')+'"');
 					this.events.emit(this.prefix + "rejected_share", this, share, (obj.error.message?obj.error.message:''));
 					return;
 				}
